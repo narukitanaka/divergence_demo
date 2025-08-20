@@ -28,6 +28,26 @@
       <div class="job-archive-list">
         <?php while (have_posts()) : the_post(); ?>
           <article <?php post_class('job-card'); ?>>
+            <?php
+              $job_id   = get_the_ID();
+              $company  = get_job_company($job_id);
+              $offices  = get_job_offices($job_id);
+              $company_name = $company ? get_the_title($company) : '';
+              $head_loc = '';
+              if (!empty($offices)) {
+                $o0   = $offices[0]; // 最初の拠点
+                $pref = get_post_meta($o0->ID, 'office_prefecture', true);
+                $city = get_post_meta($o0->ID, 'office_city', true);
+                $head_loc = trim(($pref ?: '') . ($city ?: '')); // 「都道府県＋市区町村」
+              }
+              $head_ttl = '';
+              if ($company_name || $head_loc) {
+                $head_ttl = ($head_loc ? $head_loc . ' ' : '') . $company_name . 'の採用・求人情報';
+              }
+              if ($head_ttl) {
+                echo '<p class="head-ttl">' . esc_html($head_ttl) . '</p>';
+              }
+            ?>
             <h2 class="job-card__title">
               <a href="<?php the_permalink(); ?>"><?php the_title(); ?></a>
             </h2>

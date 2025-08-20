@@ -227,7 +227,7 @@ function get_job_offices($job_id) {
 }
 
 
-// 事業所カウタム投稿ダッシュボード 絞り込みドロップダウン
+// 事業所カスタム投稿ダッシュボード 絞り込みドロップダウン
 add_action('restrict_manage_posts', function(){
   global $typenow;
   if ($typenow !== 'office') return;
@@ -254,10 +254,28 @@ add_action('pre_get_posts', function($q){
 
   if (!empty($_GET['filter_company'])) {
     $q->set('meta_query', [
-      ['key' => 'office_parent_company', 'value' => (int) $_GET['filter_company'], 'compare' => '=']
+      [
+        'key'     => 'office_parent_company',
+        'value'   => (int) $_GET['filter_company'],
+        'compare' => '='
+      ]
     ]);
   }
 });
+
+add_action('pre_get_posts', function ($q) {
+  if (!is_admin() || !$q->is_main_query()) return;
+  if ($q->get('post_type') !== 'job') return;
+
+  if (!empty($_GET['filter_job_company'])) {
+    $q->set('meta_query', [[
+      'key'     => 'job_company',
+      'value'   => (int) $_GET['filter_job_company'],
+      'compare' => '=',
+    ]]);
+  }
+});
+
 
 // 企業名カラム
 add_filter('manage_office_posts_columns', function($cols){
@@ -270,3 +288,66 @@ add_action('manage_office_posts_custom_column', function($col, $post_id){
     echo $cid ? esc_html(get_the_title($cid)) : '—';
   }
 }, 10, 2);
+
+// 一覧カラム追加
+add_filter('manage_job_posts_columns', function ($cols) {
+  $cols['job_company_col'] = '企業';
+  $cols['job_offices_col'] = '事業所';
+  return $cols;
+});
+
+// 一覧カラム表示
+add_action('manage_job_posts_custom_column', function ($col, $post_id) {
+  if ($col === 'job_company_col') {
+    $cid = (int) get_post_meta($post_id, 'job_company', true);
+    echo $cid ? esc_html(get_the_title($cid)) : '—';
+  }
+  if ($col === 'job_offices_col') {
+    $ids = (array) get_post_meta($post_id, 'job_offices', true);
+    if (!$ids) { echo '—'; return; }
+    $ids = array_map('intval', $ids);
+    $offices = get_posts([
+      'post_type'   => 'office',
+      'post__in'    => $ids,
+      'orderby'     => 'post__in',
+      'numberposts' => -1,
+      'post_status' => ['publish','draft','private'],
+    ]);
+    if (!$offices) { echo '—'; return; }
+
+    $labels = [];
+    foreach ($offices as $o) {
+      $label = get_the_title($o);
+      $p = get_post_meta($o->ID, 'office_prefecture', true);
+      $c = get_post_meta($o->ID, 'office_city', true);
+      if ($p || $c) $label .= '（' . $p . $c . '）';
+      $labels[] = $label;
+    }
+    echo esc_html(implode('、', $labels));
+  }
+}, 10, 2);
+
+
+// 企業カスタム投稿ダッシュボード 絞り込みドロップダウン
+add_action('restrict_manage_posts', function () {
+  if (get_current_screen()->post_type !== 'job') return;
+
+  $selected_company = isset($_GET['filter_job_company']) ? (int) $_GET['filter_job_company'] : 0;
+  $companies = get_posts([
+    'post_type'   => 'company',
+    'numberposts' => -1,
+    'orderby'     => 'title',
+    'order'       => 'ASC',
+    'post_status' => ['publish','draft','private'],
+  ]);
+
+  echo '<select name="filter_job_company" style="max-width:220px;">';
+  echo '<option value="">企業で絞り込み</option>';
+  foreach ($companies as $c) {
+    printf('<option value="%d"%s>%s</option>',
+      $c->ID, selected($selected_company, $c->ID, false), esc_html(get_the_title($c)));
+  }
+  echo '</select>';
+});
+
+

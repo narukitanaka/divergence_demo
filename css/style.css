@@ -23,7 +23,6 @@ p,
 dl {
   margin-bottom: 10px;
 }
-
 li {
   margin-bottom: 5px;
 }
@@ -32,6 +31,11 @@ article {
   padding: 20px;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.16);
   margin-bottom: 20px;
+}
+.head-ttl {
+  font-size: 20px;
+  font-weight: bold;
+  color: #ea9614;
 }
 section {
   margin: 20px 0;

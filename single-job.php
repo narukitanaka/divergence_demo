@@ -31,6 +31,22 @@
     ?>
     <article <?php post_class('job-detail'); ?>>
       <div class="entry-header">
+        <?php
+          // 追加：ヘッドタイトル用の動的文言を作成
+          $company_name = $company ? get_the_title($company) : '';
+          $head_loc = '';
+          if (!empty($offices)) {
+            $o0   = $offices[0]; // 最初の拠点を採用
+            $pref = get_post_meta($o0->ID, 'office_prefecture', true);
+            $city = get_post_meta($o0->ID, 'office_city', true);
+            $head_loc = trim(($pref ?: '') . ($city ?: ''));
+          }
+          $head_ttl = '';
+          if ($company_name || $head_loc) {
+            $head_ttl = ($head_loc ? $head_loc . ' ' : '') . $company_name . 'の採用・求人情報';
+          }
+        ?>
+        <p class="head-ttl"><?php echo esc_html($head_ttl); ?></p>
         <h1 class="entry-title"><?php the_title(); ?></h1>
         <ul class="entry-meta">
           <?php if ($job_id_src): ?><li>求人ID：<?php echo esc_html($job_id_src); ?></li><?php endif; ?>
@@ -48,17 +64,17 @@
       <?php if ($company): ?>
       <section class="job-company">
         <h2>企業情報（紐づいたカスタム投稿の内容）</h2>
-          <?php if ($company_src): ?>
-            <dl>
-              <dt>企業ID</dt>
-              <dd><?php echo esc_html($company_src); ?></dd>
-            </dl>
-          <?php endif; ?>
+        <?php $company_src = get_post_meta($company->ID, 'company_id_src', true); ?>
+        <?php if ($company_src): ?>
           <dl>
-            <dt>企業名</dt>
-            <dd><?php echo esc_html(get_the_title($company)); ?></dd>
+            <dt>企業ID</dt>
+            <dd><?php echo esc_html($company_src); ?></dd>
           </dl>
-          <?php $company_src = get_post_meta($company->ID, 'company_id_src', true); ?>
+        <?php endif; ?>
+        <dl>
+          <dt>企業名</dt>
+          <dd><?php echo esc_html(get_the_title($company)); ?></dd>
+        </dl>          
       </section>
       <?php endif; ?>
 
@@ -105,6 +121,7 @@
     <?php
     endwhile; endif;
     ?>
+    <a class="btn" href="<?php echo home_url('/jobs'); ?>">一覧へ戻る</a>
   </main>
 
 </body>
